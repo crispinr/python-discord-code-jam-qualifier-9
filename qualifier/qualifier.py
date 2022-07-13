@@ -1,6 +1,17 @@
 import typing
 from dataclasses import dataclass
 
+def get_staff(staff, speciality):
+    """Get a list of staff with a given speciality.
+
+    :param staff: list of staff
+    :param speciality: speciality to look for
+    :return: list of staff with the given speciality
+    """
+    for i in staff.values():
+        for j in i.scope["speciality"]:
+            if j == speciality:
+                return i
 
 @dataclass(frozen=True)
 class Request:
@@ -31,4 +42,16 @@ class RestaurantManager:
             Request object containing information about the sent
             request to your application.
         """
+        if request.scope["type"] == "staff.onduty":
+            self.staff[request.scope["id"]] = request
+        
+        if request.scope["type"] == "staff.offduty":
+            del self.staff[request.scope["id"]]
+
+        if request.scope["type"] == "order":
+            found = get_staff(self.staff, request.scope["speciality"])
+            order = await request.receive()
+            await found.send(order)
+            result = await found.receive()
+            await request.send(result)
         ...
